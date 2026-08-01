@@ -8,40 +8,53 @@
 import Foundation
 import FamilyControls
 
-class ScreenTimeManager: ObservableObject {
-    @Published var isAuthorized = false
-    
+@Observable
+class ScreenTimeManager {
     static let shared = ScreenTimeManager()
+    
+    private let authorizationCenter = AuthorizationCenter.shared
     
     private init() {}
     
-    func requestScreenTimeAuthorization() async {
+    /// Request FamilyControls authorization for screen time access
+    func requestScreenTimeAuthorization() async throws {
         do {
-            try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
-            await MainActor.run {
-                isAuthorized = true
-            }
+            try await authorizationCenter.requestAuthorization(for: .individual)
             print("✅ Screen Time authorization granted")
         } catch {
-            await MainActor.run {
-                isAuthorized = false
-            }
-            print("❌ Screen Time authorization denied: \(error)")
+            print("❌ Screen Time authorization failed: \(error.localizedDescription)")
+            throw error
         }
     }
     
-    // Save self-reported screen time
-    func saveScreenTime(minutes: Int) {
-        let calendar = Calendar.current
-        let dateKey = calendar.startOfDay(for: Date()).timeIntervalSince1970
-        UserDefaults.standard.set(minutes, forKey: "screenTime_\(Int(dateKey))")
+    /// Get today's screen time from UserDefaults (self-reported)
+    func getTodayScreenTime() -> Int {
+        let key = "todayScreenTime"
+        return UserDefaults.standard.integer(forKey: key)
+    }
+    
+    /// Save today's screen time to UserDefaults (self-reported)
+    func saveTodayScreenTime(_ minutes: Int) {
+        let key = "todayScreenTime"
+        UserDefaults.standard.set(minutes, forKey: key)
         print("✅ Saved screen time: \(minutes) minutes")
     }
     
-    // Get today's self-reported screen time
-    func getTodayScreenTime() -> Int {
-        let calendar = Calendar.current
-        let dateKey = calendar.startOfDay(for: Date()).timeIntervalSince1970
-        return UserDefaults.standard.integer(forKey: "screenTime_\(Int(dateKey))")
+    /// Format minutes into hours and minutes string
+    func formatScreenTime(_ minutes: Int) -> String {
+        let hours = minutes / 60
+        let mins = minutes % 60
+        
+        if hours > 0 {
+            return "\(hours) hr \(mins) min"
+        } else {
+            return "\(mins) min"
+        }
+    }
+    
+    /// Calculate progress against goal (3 hours = 180 minutes)
+    func screenTimeProgress(_ minutes: Int) -> Double {
+        let goalMinutes = 180.0 // 3 hours
+        return min(Double(minutes) / goalMinutes, 1.0)
     }
 }
