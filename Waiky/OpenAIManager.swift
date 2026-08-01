@@ -8,7 +8,7 @@
 import Foundation
 
 class OpenAIManager {
-    private let apiKey = "REDACTED"
+    private let apiKey = "" // Replace with your OpenAI API key
     private let endpoint = "https://api.openai.com/v1/chat/completions"
     
     // Toggle this to switch between mock and real API
