@@ -7,6 +7,7 @@
 
 import Foundation
 import UserNotifications
+import Combine
 
 class NotificationManager: NSObject, ObservableObject {
     @Published var shouldShowCheckIn: Bool = false

@@ -16,7 +16,7 @@ struct ChatMessage: Identifiable {
 
 struct AIChatView: View {
     @State private var messages: [ChatMessage] = [
-        ChatMessage(content: "Hi! I'm Waiky, your personal wellness companion. How can I support you today?", isUser: false, timestamp: Date())
+        ChatMessage(content: "Hi! I'm WaikyWaiky, your personal wellness companion. How can I support you today?", isUser: false, timestamp: Date())
     ]
     @State private var newMessage: String = ""
     @State private var isLoading = false
@@ -41,7 +41,7 @@ struct AIChatView: View {
                                 HStack {
                                     ProgressView()
                                         .padding(.horizontal)
-                                    Text("Waiky is typing...")
+                                    Text("WaikyWaiky is typing...")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                     Spacer()
@@ -80,7 +80,7 @@ struct AIChatView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Talk to Waiky")
+            .navigationTitle("Talk to WaikyWaiky")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

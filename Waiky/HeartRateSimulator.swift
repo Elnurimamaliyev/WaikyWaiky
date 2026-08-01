@@ -7,6 +7,7 @@
 
 import Foundation
 import HealthKit
+import Combine
 
 class HeartRateSimulator: ObservableObject {
     @Published var currentHeartRate: Double = 72.0

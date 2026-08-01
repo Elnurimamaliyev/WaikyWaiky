@@ -76,6 +76,7 @@ struct OnboardingView: View {
                 .multilineTextAlignment(.center)
                 .font(.title)
                 .frame(maxWidth: 200)
+                .autocorrectionDisabled()
         }
     }
     
@@ -90,6 +91,7 @@ struct OnboardingView: View {
                 .multilineTextAlignment(.center)
                 .font(.title2)
                 .frame(maxWidth: 300)
+                .autocorrectionDisabled()
         }
     }
     

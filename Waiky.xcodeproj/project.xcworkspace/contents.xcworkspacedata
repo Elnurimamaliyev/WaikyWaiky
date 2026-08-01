@@ -4,4 +4,19 @@
    <FileRef
       location = "self:">
    </FileRef>
+   <FileRef
+      location = "group:ScreenTimeManager 2.swift">
+   </FileRef>
+   <FileRef
+      location = "group:HabitTrackerView 2.swift">
+   </FileRef>
+   <FileRef
+      location = "group:CalendarManager 2.swift">
+   </FileRef>
+   <FileRef
+      location = "group:PremiumView.swift">
+   </FileRef>
+   <FileRef
+      location = "group:IMPLEMENTATION_SUMMARY.md">
+   </FileRef>
 </Workspace>

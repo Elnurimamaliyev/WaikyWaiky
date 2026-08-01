@@ -13,43 +13,99 @@ struct WeeklyMoodChart: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Your Week")
+            Text("Your Visuals")
                 .font(.headline)
                 .foregroundStyle(.secondary)
             
             if entries.isEmpty {
-                VStack {
-                    Image(systemName: "chart.bar.xaxis")
-                        .font(.largeTitle)
-                        .foregroundStyle(.secondary)
-                    Text("No check-ins yet this week")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 200)
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(12)
+                emptyStateView
             } else {
-                Chart {
-                    ForEach(entries) { entry in
-                        BarMark(
-                            x: .value("Day", entry.dayOfWeek),
-                            y: .value("Mood", entry.mood)
-                        )
-                        .foregroundStyle(Color.blue.gradient)
-                        .cornerRadius(4)
+                VStack(spacing: 20) {
+                    // Mood Chart
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Mood")
+                            .font(.subheadline)
+                            .bold()
+                            .foregroundStyle(.blue)
+                        
+                        moodChartView
+                    }
+                    
+                    Divider()
+                    
+                    // Sleep Chart
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Sleep Quality")
+                            .font(.subheadline)
+                            .bold()
+                            .foregroundStyle(.purple)
+                        
+                        sleepChartView
                     }
                 }
-                .frame(height: 200)
-                .chartYScale(domain: 0...5)
-                .chartYAxis {
-                    AxisMarks(position: .leading, values: [1, 2, 3, 4, 5])
-                }
                 .padding()
-                .background(Color.blue.opacity(0.05))
-                .cornerRadius(12)
+                .liquidGlass()
             }
+        }
+    }
+    
+    private var emptyStateView: some View {
+        VStack {
+            Image(systemName: "chart.bar.xaxis")
+                .font(.largeTitle)
+                .foregroundStyle(.secondary)
+            Text("No check-ins yet")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 200)
+        .liquidGlass()
+    }
+    
+    private var moodChartView: some View {
+        Chart {
+            ForEach(entries) { entry in
+                BarMark(
+                    x: .value("Time", entry.timeLabel),
+                    y: .value("Mood", entry.mood)
+                )
+                .foregroundStyle(Color.blue.gradient)
+                .annotation(position: .top) {
+                    Text("\(entry.mood)")
+                        .font(.caption2)
+                        .bold()
+                        .foregroundStyle(.blue)
+                }
+            }
+        }
+        .frame(height: 150)
+        .chartYScale(domain: 0...5)
+        .chartYAxis {
+            AxisMarks(position: .leading, values: [1, 2, 3, 4, 5])
+        }
+    }
+    
+    private var sleepChartView: some View {
+        Chart {
+            ForEach(entries) { entry in
+                BarMark(
+                    x: .value("Time", entry.timeLabel),
+                    y: .value("Sleep", entry.sleepQuality)
+                )
+                .foregroundStyle(Color.purple.gradient)
+                .annotation(position: .top) {
+                    Text("\(entry.sleepQuality)")
+                        .font(.caption2)
+                        .bold()
+                        .foregroundStyle(.purple)
+                }
+            }
+        }
+        .frame(height: 150)
+        .chartYScale(domain: 0...5)
+        .chartYAxis {
+            AxisMarks(position: .leading, values: [1, 2, 3, 4, 5])
         }
     }
 }
@@ -57,8 +113,8 @@ struct WeeklyMoodChart: View {
 #Preview {
     WeeklyMoodChart(entries: [
         CheckInEntry(date: Date(), mood: 4, sleepQuality: 3, nudge: nil),
-        CheckInEntry(date: Date().addingTimeInterval(-86400), mood: 3, sleepQuality: 4, nudge: nil),
-        CheckInEntry(date: Date().addingTimeInterval(-172800), mood: 5, sleepQuality: 5, nudge: nil)
+        CheckInEntry(date: Date().addingTimeInterval(-3600), mood: 3, sleepQuality: 4, nudge: nil),
+        CheckInEntry(date: Date().addingTimeInterval(-7200), mood: 5, sleepQuality: 5, nudge: nil)
     ])
     .padding()
 }

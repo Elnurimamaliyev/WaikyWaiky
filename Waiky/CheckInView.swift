@@ -6,16 +6,20 @@
 //
 
 import SwiftUI
+import EventKit
 
 struct CheckInView: View {
     @State private var healthManager = HealthManager()
     @State private var openAIManager = OpenAIManager()
-    @State private var moodRating: Int = 3
-    @State private var sleepQuality: Int = 3
+    @State private var moodRating: Double = 3.0
+    @State private var sleepQuality: Double = 3.0
+    @State private var skipMood = false
+    @State private var skipSleep = false
     @State private var heartRate: Double? = nil
     @State private var sleepHours: Double? = nil
     @State private var aiNudge: String? = nil
     @State private var isLoadingNudge = false
+    @State private var todayEvents: [EKEvent] = []
     
     @Environment(\.dismiss) var dismiss
 
@@ -26,38 +30,111 @@ struct CheckInView: View {
                     .font(.largeTitle)
                     .bold()
 
-                VStack(alignment: .leading) {
-                    Text("How are you feeling?")
-                        .font(.headline)
-                    Picker("Mood", selection: $moodRating) {
-                        ForEach(1...5, id: \.self) { value in
-                            Text("\(value)")
+                VStack(spacing: 24) {
+                    // Mood Slider
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("How are you feeling?")
+                                .font(.headline)
+                            Spacer()
+                            Button(skipMood ? "Add" : "Skip") {
+                                skipMood.toggle()
+                            }
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                        }
+                        
+                        if !skipMood {
+                            VStack(spacing: 8) {
+                                HStack {
+                                    Text(moodLabel)
+                                        .font(.title3)
+                                        .bold()
+                                        .foregroundStyle(moodColor)
+                                    Spacer()
+                                }
+                                
+                                Slider(value: $moodRating, in: 1...5, step: 0.5)
+                                    .tint(moodColor)
+                                
+                                HStack {
+                                    Text("Struggling")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Spacer()
+                                    Text("Thriving")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        } else {
+                            Text("Skipped")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.vertical, 8)
                         }
                     }
-                    .pickerStyle(.segmented)
-                }
 
-                VStack(alignment: .leading) {
-                    Text("How did you sleep?")
-                        .font(.headline)
-                    Picker("Sleep", selection: $sleepQuality) {
-                        ForEach(1...5, id: \.self) { value in
-                            Text("\(value)")
+                    // Sleep Slider
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("How did you sleep?")
+                                .font(.headline)
+                            Spacer()
+                            Button(skipSleep ? "Add" : "Skip") {
+                                skipSleep.toggle()
+                            }
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                        }
+                        
+                        if !skipSleep {
+                            VStack(spacing: 8) {
+                                HStack {
+                                    Text(sleepLabel)
+                                        .font(.title3)
+                                        .bold()
+                                        .foregroundStyle(sleepColor)
+                                    Spacer()
+                                }
+                                
+                                Slider(value: $sleepQuality, in: 1...5, step: 0.5)
+                                    .tint(sleepColor)
+                                
+                                HStack {
+                                    Text("Restless")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Spacer()
+                                    Text("Refreshed")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        } else {
+                            Text("Skipped")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.vertical, 8)
                         }
                     }
-                    .pickerStyle(.segmented)
                 }
 
                 Button("Submit Check-In") {
-                    print("Mood: \(moodRating), Sleep: \(sleepQuality)")
+                    print("Mood: \(skipMood ? "skipped" : String(format: "%.1f", moodRating)), Sleep: \(skipSleep ? "skipped" : String(format: "%.1f", sleepQuality))")
                     isLoadingNudge = true
                     aiNudge = nil
                     
+                    let isBusyDay = CalendarManager.shared.isBusyDay(events: todayEvents)
+                    
                     openAIManager.generateNudge(
-                        mood: moodRating,
-                        sleepQuality: sleepQuality,
+                        mood: skipMood ? 0 : Int(moodRating.rounded()),
+                        sleepQuality: skipSleep ? 0 : Int(sleepQuality.rounded()),
                         heartRate: heartRate,
-                        sleepHours: sleepHours
+                        sleepHours: sleepHours,
+                        isBusyDay: isBusyDay
                     ) { nudge in
                         isLoadingNudge = false
                         if let nudge = nudge {
@@ -69,7 +146,7 @@ struct CheckInView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(isLoadingNudge)
+                .disabled(isLoadingNudge || (skipMood && skipSleep))
                 
                 // AI Response Display
                 if isLoadingNudge {
@@ -159,6 +236,14 @@ struct CheckInView: View {
                         }
                     }
                 }
+                
+                // Load calendar events for context
+                Task {
+                    let granted = await CalendarManager.shared.requestCalendarAccess()
+                    if granted {
+                        todayEvents = await CalendarManager.shared.fetchTodayEvents()
+                    }
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -170,10 +255,59 @@ struct CheckInView: View {
         }
     }
     
+    // Computed properties for mood labels and colors
+    private var moodLabel: String {
+        switch moodRating {
+        case 1.0..<2.0: return "Struggling"
+        case 2.0..<3.0: return "Challenging"
+        case 3.0..<4.0: return "Okay"
+        case 4.0..<5.0: return "Good"
+        default: return "Thriving"
+        }
+    }
+    
+    private var moodColor: Color {
+        switch moodRating {
+        case 1.0..<2.0: return .red
+        case 2.0..<3.0: return .orange
+        case 3.0..<4.0: return .yellow
+        case 4.0..<5.0: return .green
+        default: return .blue
+        }
+    }
+    
+    private var sleepLabel: String {
+        switch sleepQuality {
+        case 1.0..<2.0: return "Restless"
+        case 2.0..<3.0: return "Interrupted"
+        case 3.0..<4.0: return "Fair"
+        case 4.0..<5.0: return "Good"
+        default: return "Refreshed"
+        }
+    }
+    
+    private var sleepColor: Color {
+        switch sleepQuality {
+        case 1.0..<2.0: return .red
+        case 2.0..<3.0: return .orange
+        case 3.0..<4.0: return .yellow
+        case 4.0..<5.0: return .green
+        default: return .purple
+        }
+    }
+    
     private func saveNudge(_ nudge: String) {
         UserDefaults.standard.set(nudge, forKey: "lastNudge")
         UserDefaults.standard.set(Date(), forKey: "lastNudgeDate")
-        print("✅ Saved nudge to UserDefaults")
+        
+        // Save to check-in history (use 0 for skipped values, rounded for storage)
+        CheckInHistoryManager.shared.saveCheckIn(
+            mood: skipMood ? 0 : Int(moodRating.rounded()),
+            sleepQuality: skipSleep ? 0 : Int(sleepQuality.rounded()),
+            nudge: nudge
+        )
+        
+        print("✅ Saved nudge to UserDefaults and history")
     }
 }
 
